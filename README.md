@@ -14,8 +14,11 @@ Install `react-native-sensitive-info` using:
 
 | React Native SDK | RNSI SDK |
 | :--------------: | :-------: |
+|     v0.84+       |  current  |
 |     v0.60+       |  v5.5.0   |
 | v0.59.0 or lower |  v5.4.x   |
+
+The current package includes the Android package registration changes and Codegen metadata needed for React Native 0.84.
 
 ## Linking project
 
