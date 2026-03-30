@@ -21,28 +21,36 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setItem:(NSString *)key
           value:(NSString *)value
         options:(NSDictionary *)options
-        resolve:(RCTPromiseResolveBlock)resolve
-         reject:(RCTPromiseRejectBlock)reject;
+       resolver:(RCTPromiseResolveBlock)resolve
+       rejecter:(RCTPromiseRejectBlock)reject;
 
 - (void)getItem:(NSString *)key
         options:(NSDictionary *)options
-        resolve:(RCTPromiseResolveBlock)resolve
-         reject:(RCTPromiseRejectBlock)reject;
+       resolver:(RCTPromiseResolveBlock)resolve
+       rejecter:(RCTPromiseRejectBlock)reject;
 
 - (void)getAllItems:(NSDictionary *)options
-            resolve:(RCTPromiseResolveBlock)resolve
-             reject:(RCTPromiseRejectBlock)reject;
+           resolver:(RCTPromiseResolveBlock)resolve
+           rejecter:(RCTPromiseRejectBlock)reject;
 
 - (void)deleteItem:(NSString *)key
            options:(NSDictionary *)options
-           resolve:(RCTPromiseResolveBlock)resolve
-            reject:(RCTPromiseRejectBlock)reject;
+          resolver:(RCTPromiseResolveBlock)resolve
+          rejecter:(RCTPromiseRejectBlock)reject;
 
 - (void)isSensorAvailable:(RCTPromiseResolveBlock)resolve
-                   reject:(RCTPromiseRejectBlock)reject;
+                  rejecter:(RCTPromiseRejectBlock)reject;
 
-@optional
-- (void)setInvalidatedByBiometricEnrollment;
+- (void)isHardwareDetected:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject;
+
+- (void)hasEnrolledFingerprints:(RCTPromiseResolveBlock)resolve
+                        rejecter:(RCTPromiseRejectBlock)reject;
+
+- (void)setInvalidatedByBiometricEnrollment:(BOOL)invalidatedByBiometricEnrollment
+                                   resolver:(RCTPromiseResolveBlock)resolve
+                                   rejecter:(RCTPromiseRejectBlock)reject;
+
 - (void)cancelFingerprintAuth;
 
 @end

@@ -7,8 +7,12 @@ export interface Spec extends TurboModule {
   getAllItems(options: Object): Promise<Array<Object>>;
   deleteItem(key: string, options: Object): Promise<void>;
   isSensorAvailable(): Promise<string | boolean>;
-  setInvalidatedByBiometricEnrollment?(): void;
-  cancelFingerprintAuth?(): void;
+  isHardwareDetected(): Promise<boolean>;
+  hasEnrolledFingerprints(): Promise<boolean>;
+  setInvalidatedByBiometricEnrollment(
+    invalidatedByBiometricEnrollment: boolean
+  ): Promise<void>;
+  cancelFingerprintAuth(): void;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RNSensitiveInfo');

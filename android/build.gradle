@@ -4,12 +4,39 @@ def DEFAULT_COMPILE_SDK_VERSION = 33
 def DEFAULT_TARGET_SDK_VERSION = 33
 def DEFAULT_MIN_SDK_VERSION = 21
 
+def getExtOrDefault(name, defaultValue) {
+    return rootProject.ext.has(name) ? rootProject.ext.get(name) : defaultValue
+}
+
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: "com.facebook.react"
+}
+
 android {
-    compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
+    def agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
+    if (agpVersion.tokenize('.')[0].toInteger() >= 7) {
+        namespace "br.com.classapp.RNSensitiveInfo"
+        buildFeatures {
+            buildConfig true
+        }
+    }
+
+    compileSdkVersion getExtOrDefault('compileSdkVersion', DEFAULT_COMPILE_SDK_VERSION)
+
+    if (rootProject.hasProperty("ndkPath")) {
+        ndkPath rootProject.ext.ndkPath
+    }
+    if (rootProject.hasProperty("ndkVersion")) {
+        ndkVersion rootProject.ext.ndkVersion
+    }
 
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? project.minSdkVersion : DEFAULT_MIN_SDK_VERSION
-        targetSdkVersion project.hasProperty('targetSdkVersion') ? project.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
+        minSdkVersion getExtOrDefault('minSdkVersion', DEFAULT_MIN_SDK_VERSION)
+        targetSdkVersion getExtOrDefault('targetSdkVersion', DEFAULT_TARGET_SDK_VERSION)
         versionCode 1
         versionName "1.0"
     }
@@ -28,11 +55,22 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    sourceSets.main {
+        java {
+            if (isNewArchitectureEnabled()) {
+                srcDirs += ["${project.buildDir}/generated/source/codegen/java"]
+            }
+        }
+    }
 }
 
 repositories {
     google()
     mavenCentral()
+    maven {
+        url "$rootDir/../node_modules/react-native/android"
+    }
 }
 
 dependencies {

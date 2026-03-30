@@ -27,6 +27,18 @@ if (packageJson.codegenConfig) {
   console.log('   Name:', packageJson.codegenConfig.name);
   console.log('   Type:', packageJson.codegenConfig.type);
   console.log('   Source dir:', packageJson.codegenConfig.jsSrcsDir);
+  if (packageJson.codegenConfig.android?.javaPackageName) {
+    console.log(
+      '   Android package:',
+      packageJson.codegenConfig.android.javaPackageName
+    );
+  }
+  if (packageJson.codegenConfig.ios?.modulesProvider) {
+    console.log(
+      '   iOS modulesProvider:',
+      JSON.stringify(packageJson.codegenConfig.ios.modulesProvider)
+    );
+  }
 } else {
   console.log('❌ No codegen config in package.json');
 }

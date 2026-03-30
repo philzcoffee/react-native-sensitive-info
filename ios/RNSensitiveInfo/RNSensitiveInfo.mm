@@ -2,17 +2,27 @@
 
 #import <Security/Security.h>
 #import "RNSensitiveInfo.h"
-
-#import "RNSensitiveInfoSpec.h"
 #import <React/RCTConvert.h>
 
 #if !TARGET_OS_TV
 #import <LocalAuthentication/LocalAuthentication.h>
 #endif
 
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <memory>
+#endif
+
 @implementation RNSensitiveInfo
 
 RCT_EXPORT_MODULE();
+
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<facebook::react::NativeSensitiveInfoSpecJSI>(params);
+}
+#endif
 
 CFStringRef convertkSecAttrAccessible(NSString* key){
     if([key isEqual: @"kSecAttrAccessibleAfterFirstUnlock"]){
@@ -36,7 +46,7 @@ CFStringRef convertkSecAttrAccessible(NSString* key){
     return kSecAttrAccessibleWhenUnlocked;
 }
 
-CFOptionFlags convertkSecAccessControl(NSString* key){
+SecAccessControlCreateFlags convertkSecAccessControl(NSString* key){
     if([key isEqual: @"kSecAccessControlApplicationPassword"]){
         return kSecAccessControlApplicationPassword;
     }
@@ -109,7 +119,7 @@ CFOptionFlags convertkSecAccessControl(NSString* key){
   }
 }
 
-RCT_EXPORT_METHOD(setItem:(NSString*)key value:(NSString*)value options:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+RCT_EXPORT_METHOD(setItem:(NSString*)key value:(NSString*)value options:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject){
 
     NSString * keychainService = [RCTConvert NSString:options[@"keychainService"]];
     if (keychainService == NULL) {
@@ -127,15 +137,19 @@ RCT_EXPORT_METHOD(setItem:(NSString*)key value:(NSString*)value options:(NSDicti
                                       sync, kSecAttrSynchronizable,
                                       key, kSecAttrAccount, nil];
     NSMutableDictionary *query = [search mutableCopy];
-    [query setValue: valueData forKey: kSecValueData];
+    [query setValue:valueData forKey:(__bridge NSString *)kSecValueData];
 
     if([RCTConvert BOOL:options[@"touchID"]]){
-        CFStringRef kSecAccessControlValue = convertkSecAccessControl([RCTConvert NSString:options[@"kSecAccessControl"]]);
-        SecAccessControlRef sac = SecAccessControlCreateWithFlags(kCFAllocatorDefault, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, kSecAccessControlValue, NULL);
+        SecAccessControlCreateFlags accessControlFlags = convertkSecAccessControl([RCTConvert NSString:options[@"kSecAccessControl"]]);
+        SecAccessControlRef sac = SecAccessControlCreateWithFlags(
+            kCFAllocatorDefault,
+            kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
+            accessControlFlags,
+            NULL);
         [query setValue:(__bridge id _Nullable)(sac) forKey:(NSString *)kSecAttrAccessControl];
     } else if([RCTConvert NSString:options[@"kSecAttrAccessible"]] != NULL){
         CFStringRef kSecAttrAccessibleValue = convertkSecAttrAccessible([RCTConvert NSString:options[@"kSecAttrAccessible"]]);
-        [query setValue:(__bridge id _Nullable)(kSecAttrAccessibleValue) forKey:(NSString *)kSecAttrAccessible];
+        [query setValue:(__bridge id _Nullable)kSecAttrAccessibleValue forKey:(__bridge NSString *)kSecAttrAccessible];
     }
 
     OSStatus osStatus;
@@ -161,7 +175,7 @@ RCT_EXPORT_METHOD(setItem:(NSString*)key value:(NSString*)value options:(NSDicti
     resolve(value);
 }
 
-RCT_EXPORT_METHOD(getItem:(NSString *)key options:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+RCT_EXPORT_METHOD(getItem:(NSString *)key options:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject){
     
     
     NSString * keychainService = [RCTConvert NSString:options[@"keychainService"]];
@@ -196,7 +210,7 @@ RCT_EXPORT_METHOD(getItem:(NSString *)key options:(NSDictionary *)options resolv
         }
         
         // If kLocalizedFallbackTitle exist, LAPolicy must allow fallback to pin also
-        NSInteger policy = kLocalizedFallbackTitle ? LAPolicyDeviceOwnerAuthentication : LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+        LAPolicy policy = kLocalizedFallbackTitle ? LAPolicyDeviceOwnerAuthentication : LAPolicyDeviceOwnerAuthenticationWithBiometrics;
         
         [context evaluatePolicy:policy
                 localizedReason:prompt
@@ -210,15 +224,15 @@ RCT_EXPORT_METHOD(getItem:(NSString *)key options:(NSDictionary *)options resolv
                                   return;
                               }
                               
-                              [self getItemWithQuery:query resolver:resolve rejecter:reject];
+                              [self getItemWithQuery:query resolve:resolve reject:reject];
                           }];
         return;
     }
     
-    [self getItemWithQuery:query resolver:resolve rejecter:reject];
+    [self getItemWithQuery:query resolve:resolve reject:reject];
 }
 
-- (void)getItemWithQuery:(NSDictionary *)query resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+- (void)getItemWithQuery:(NSDictionary *)query resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
     // Look up server in the keychain
     NSDictionary* found = nil;
     CFTypeRef foundTypeRef = NULL;
@@ -241,7 +255,7 @@ RCT_EXPORT_METHOD(getItem:(NSString *)key options:(NSDictionary *)options resolv
     }
 }
 
-RCT_EXPORT_METHOD(getAllItems:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+RCT_EXPORT_METHOD(getAllItems:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject){
     
     NSString * keychainService = [RCTConvert NSString:options[@"keychainService"]];
     
@@ -294,12 +308,12 @@ RCT_EXPORT_METHOD(getAllItems:(NSDictionary *)options resolver:(RCTPromiseResolv
     if(finalResult != nil){
     resolve(@[finalResult]);
     } else {
-        reject(@"no_events", @"There were no events", @[[NSNull null]]);
+        reject(@"no_events", @"There were no events", nil);
     }
 }
 
 
-RCT_EXPORT_METHOD(deleteItem:(NSString *)key options:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+RCT_EXPORT_METHOD(deleteItem:(NSString *)key options:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject){
 
     NSString * keychainService = [RCTConvert NSString:options[@"keychainService"]];
     if (keychainService == NULL) {
@@ -329,7 +343,7 @@ RCT_EXPORT_METHOD(deleteItem:(NSString *)key options:(NSDictionary *)options res
     resolve(nil);
 }
 
-RCT_EXPORT_METHOD(isSensorAvailable:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(isSensorAvailable:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
 #if !TARGET_OS_TV
     LAContext *context = [[LAContext alloc] init];
@@ -353,10 +367,23 @@ RCT_EXPORT_METHOD(isSensorAvailable:(RCTPromiseResolveBlock)resolve rejecter:(RC
 #endif
 }
 
-RCT_EXPORT_METHOD(setInvalidatedByBiometricEnrollment)
+RCT_EXPORT_METHOD(isHardwareDetected:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+{
+  resolve(@(NO));
+}
+
+RCT_EXPORT_METHOD(hasEnrolledFingerprints:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+{
+  resolve(@(NO));
+}
+
+RCT_EXPORT_METHOD(setInvalidatedByBiometricEnrollment:(BOOL)invalidatedByBiometricEnrollment
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
 {
     // iOS doesn't need this method as it's handled automatically
     // This is just for API compatibility with Android
+    resolve(nil);
 }
 
 RCT_EXPORT_METHOD(cancelFingerprintAuth)
