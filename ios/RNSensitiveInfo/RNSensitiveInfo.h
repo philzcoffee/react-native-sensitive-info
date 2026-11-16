@@ -7,8 +7,18 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
- #import "React/RCTBridgeModule.h"
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <RNSensitiveInfoSpec/RNSensitiveInfoSpec.h>
+#else
+#import <React/RCTBridgeModule.h>
+#endif
 
- @interface RNSensitiveInfo : NSObject <RCTBridgeModule>
+@interface RNSensitiveInfo : NSObject <
+#ifdef RCT_NEW_ARCH_ENABLED
+NativeSensitiveInfoSpec
+#else
+RCTBridgeModule
+#endif
+>
 
- @end
+@end
